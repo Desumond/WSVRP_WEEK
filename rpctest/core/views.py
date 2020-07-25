@@ -1,15 +1,15 @@
-from django.core.exceptions import ValidationError
-from django.db.utils import IntegrityError
+# from django.core.exceptions import ValidationError
+# from django.db.utils import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
 
 from spyne.server.django import DjangoApplication
 from spyne.model.primitive import Unicode, Integer, AnyDict
 from spyne.service import ServiceBase
 from spyne.protocol.json import JsonDocument
-from spyne.protocol.xml import XmlDocument
+# from spyne.protocol.xml import XmlDocument
 from spyne.application import Application
 from spyne.decorator import rpc
-from spyne.util.django import DjangoComplexModel
+# from spyne.util.django import DjangoComplexModel
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
@@ -19,6 +19,8 @@ from datetime import datetime, timedelta
 
 #Coefficients for taking to account the impact of traffic
 traffic_coefficient = [1.036,1.015,1.004,1,1.003,1.018,1.066,1.190,1.254,1.244,1.221,1.218,1.218,1.222,1.221,1.216,1.226,1.228,1.241,1.232,1.210,1.171,1.130,1.076]
+
+server = 'http://3.19.181.200:5000'
 
 #Query module
 class MakeModeling(ServiceBase):
@@ -48,13 +50,13 @@ class MakeModeling(ServiceBase):
 
 				#If the data is correct, but modeling is not possible for them, then we raise other errors
 			elif data['error'] == 'TravelTimeError':
-				solution['status']={'code':data['error'],'message':data['info']}
+				solution['status'] = {'code': data['error'], 'message': data['info']}
 				er = 1
 			elif data['error'] == 'CapacityError':
-				solution['status']={'code':data['error'],'message':data['info']}
+				solution['status'] = {'code': data['error'], 'message': data['info']}
 				er = 1
 			else:
-				solution={'status': {'code': 'ConnectionError', 'message': 'OSRM server is not responding. It is not possible to get the matrix.'}}
+				solution = {'status': {'code': 'ConnectionError', 'message': 'OSRM server is not responding. It is not possible to get the matrix.'}}
 		
 		#If the data is incorrect, then we raise various types of errors
 		except TypeError:
@@ -66,26 +68,28 @@ class MakeModeling(ServiceBase):
 			if er == 1:
 				pass
 			else:
-				solution={'status':{'code':'UnknownDataERROR','message':'Unknown error with input data'}}
+				solution = {'status': {'code': 'UnknownDataERROR', 'message': 'Unknown error with input data'}}
 		
 		#Call the solution function
 		if gotomodeling == 1:
 			solver_result = main(data)
 			
-			#If a solution is found, then output
+			#If a solution was found, then output
 			if solver_result['status'] == 1:
-				solution = print_solution(data,solver_result)
+				solution = print_solution(data, solver_result)
 				solution['status'] = {'code': 'OK', 'message': 'Problem solved successfully'}
 			
 			#If not, then we raise various errors related to the solver
 			elif solver_result['status'] == 2: 
-				solution={'status': {'code': 'NoSolutionERROR', 'message':'No solution found to the problem. Verify the data is correct or try to increase capacity'}}
+				solution = {'status': {'code': 'NoSolutionERROR', 'message':'No solution found to the problem. Verify the data is correct or try to increase capacity'}}
 			elif solver_result['status'] == 3:	
-				solution={'status': {'code': 'TimeERROR', 'message': 'No solution found to the problem. Time limit reached before finding a solution. Verify the data is correct or try to increase capacity'}}
+				solution = {'status': {'code': 'TimeERROR', 'message': 'No solution found to the problem. Time limit reached before finding a solution. Verify the data is correct or try to increase capacity'}}
 			elif solver_result['status'] == 4:	
-				solution={'status': {'code': 'ModelERROR', 'message': 'No solution found to the problem. Model is not correct. Verify the data is correct'}}
-			else: solution={'status': {'code': 'UnknownSolverERROR', 'message': 'Unknown error'}}
-		else: pass
+				solution = {'status': {'code': 'ModelERROR', 'message': 'No solution found to the problem. Model is not correct. Verify the data is correct'}}
+			else:
+				solution = {'status': {'code': 'UnknownSolverERROR', 'message': 'Unknown error'}}
+		else:
+			pass
 		return solution
 
 #Function to translate data from json to solver format
@@ -111,7 +115,7 @@ def create_data_model(data_input):
 
 	max_time = 0
 
-	# Unpack information about buses and set the cost associated with their size
+	# Unpack information about buses and set the "price" associated with their size
 	data['vehicle_capacities'] = []
 	data['vehicle_price'] = []
 	for i in data_input['bus_types']:
@@ -128,23 +132,26 @@ def create_data_model(data_input):
 	# Get coordinates for query to OSRM
 	coordinates = str(data_input['school']['lng']) + ',' + str(data_input['school']['lat']) + ';'
 	coordinates += str(data_input['school']['lng']) + ',' + str(data_input['school']['lat']) + ';'
-	data['points_info'].append({'coordinates_for_route': str(data_input['school']['lng']) + ',' + str(data_input['school']['lat']),
-								'id': data_input['school']['id'],
-								'presence': {'lun': 1, 'mar': 1, 'mie': 1, 'jue': 1, 'vie': 1}})
+
+	# Set school points for solver
+	data['points_info'].append(
+		{'coordinates_for_route': str(data_input['school']['lng']) + ',' + str(data_input['school']['lat']),
+		'id': data_input['school']['id'],
+		'presence': {'lun': 1, 'mar': 1, 'mie': 1, 'jue': 1, 'vie': 1}})
 	data['points_info'].append(
 		{'coordinates_for_route': str(data_input['school']['lng']) + ',' + str(data_input['school']['lat']),
 		 'id': data_input['school']['id'],
 		 'presence': {'lun': 1, 'mar': 1, 'mie': 1, 'jue': 1, 'vie': 1}})
 
-#	data['coordinates_for_route'].append(str(data_input['school']['lng']) + ',' + str(data_input['school']['lat']))
 	data['time_windows'].append([0, data['max_route_time']])
 	data['time_windows'].append([0, data['max_route_time']])
-
 
 	if data['direction'] == 0:
+		# Set information about points
 		for a in data_input['points']:
 			coord = str(a['lng']) + ',' + str(a['lat'])
 			coordinates += coord + ';'
+			# For route from home set time window like (max_route_time - max_route_time for point,max_route_time)
 			twstart = int(data['max_route_time']) - int(a['max_route_time'])*60
 			data['points_info'].append(
 				{'coordinates_for_route': coord,
@@ -154,10 +161,11 @@ def create_data_model(data_input):
 
 	else:
 		for a in data_input['points']:
+			# Set information about points
 			coord = str(a['lng']) + ',' + str(a['lat'])
 			coordinates += coord + ';'
+			# For route from school set time window like (0, max_route_time for point)
 			twstop = int(a['max_route_time'])*60
-
 			data['points_info'].append(
 				{'coordinates_for_route': coord,
 				 'id': a['id'],
@@ -167,14 +175,12 @@ def create_data_model(data_input):
 	coordinates = coordinates[:-1]  # delete last character from string to match request format
 
 	# Time matrix query
-	# server = 'http://192.168.100.32:5000'
-	server = 'http://192.168.86.64:5000'
 	url_req = server + '/table/v1/driving/' + coordinates + '?annotations=duration'
 	try:
 		get_matrix = requests.post(url_req)
 		r = get_matrix.json()	
 	
-	# Enter in the data information about the needs, time windows and the edited time matrix.
+	# Time matrix process
 		for a in range(len(data_input['points'])):
 
 			# Direction to school (start at arbitrary point)
@@ -189,7 +195,7 @@ def create_data_model(data_input):
 						else:
 							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'],1) + data['service_time']
 					# Checking maximum route time from the start to end points of the route
-					if r['durations'][0][a] > max_time: 
+					if r['durations'][0][a] > max_time:
 						max_time = r['durations'][a][b]
 					else:
 						pass
@@ -207,9 +213,9 @@ def create_data_model(data_input):
 						
 						# Edit time matrix
 						if a <= 1 or b <= 1:
-							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'],1)
+							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'], 1)
 						else:
-							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'],1) + data['service_time']
+							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'], 1) + data['service_time']
 					
 					# Checking the maximum distance of the start and end points of the route
 					if r['durations'][0][a] > max_time: 
@@ -223,7 +229,7 @@ def create_data_model(data_input):
 		
 		# Write changing matrix to
 		data['time_matrix'] = r['durations']
-		
+
 		# Check errors
 		if max_time >= data['max_route_time']:
 			data['info'] = 'The travel time from the start to one of the end points is more than maximum travel time. '
@@ -242,7 +248,7 @@ def create_data_model(data_input):
 		data['error'] = 'Connection error! OSRM server is not responding, it is not possible to get the time matrix.'
 	return data
 
-
+# Solver
 def main(data):
 	
 	# Create the routing index manager.
@@ -340,8 +346,6 @@ def main(data):
 def get_route(route_for_draw, day_route, day_time, data):
 	
 	# Server request
-	# server = 'http://192.168.100.32:5000'
-	server = 'http://192.168.86.64:5000'
 	url = server + "/route/v1/driving/" + route_for_draw # + '?overview=full'
 
 	# Trying to connect to the server
@@ -357,26 +361,29 @@ def get_route(route_for_draw, day_route, day_time, data):
 		for a in res['routes'][0]['legs']:
 			points.append({'distance': a['distance'], 'duration': a['duration']})
 
+		# Process time of departure(arrival) from(to) school
 		school_time = day_time.split(':')
 		time_temp = timedelta(hours=int(school_time[0]), minutes=int(school_time[1]))
 
+		# Start time calculation
 		if data['direction'] == 0:
-			route_time = time_temp - timedelta(seconds=round(int(res['routes'][0]['duration']) * float(data['time_coefficient']) + int(data['service_time']) * len(res['routes'][0]['legs'])))
+			route_time = time_temp - timedelta(seconds=round(res['routes'][0]['duration'] + (data['service_time'] * (len(res['routes'][0]['legs'])-1))))
 		else:
 			route_time = time_temp
-
-		log = {'distance': res['routes'][0]['distance'], 'duration': res['routes'][0]['duration']}
 
 		# Route points
 		waypoints = []
 		time = 0
 		counter = 0
 		for i in res['waypoints']:
+			# For last point no service time
 			if counter == (len(res['waypoints'])-1):
-				time += round(int(points[counter]['duration']) * float(data['time_coefficient']))
+				time += round(points[counter]['duration'])
 			else:
-				time += round(int(points[counter]['duration']) * float(data['time_coefficient']) + int(data['service_time']))
+				time += round(points[counter]['duration'] + data['service_time'])
+			# Arrival hour calculation
 			hour = timedelta(seconds=time) + route_time
+
 			if counter == 0:
 				waypoints.append({'index': 0, 'id': day_route[counter]['id'], 'arrival_time': 0,
 								"arrival_hour": str(hour),
@@ -385,7 +392,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 				waypoints.append({'index': counter, 'id': day_route[counter]['id'], 'arrival_time': time,
 								"arrival_hour": str(hour),
 								'lng': i['location'][0], 'lat': i['location'][1]})
-			counter +=1
+			counter += 1
 
 		start_point = {'id': day_route[0]['id'],
 					   'arrival_time': 0,
@@ -404,13 +411,14 @@ def get_route(route_for_draw, day_route, day_time, data):
 			   'start': start_point,
 			   'finish': end_point,
 			   'waypoints': waypoints,
-			   'geometry': res['routes'][0]['geometry'],
+			#   'geometry': res['routes'][0]['geometry'],
 			   'polyline': rt
 			   }
 		route_info = {'load': len(res['routes'][0]['legs']), 'total_time': time, 'distance': res['routes'][0]['distance'],'draw': draw}
 	except:
 		data['error'] = 'Connection error! OSRM server is not responding, it is not possible to get the route.'
 		route_info = ''
+
 	return route_info
 
 
@@ -448,10 +456,9 @@ def print_solution(data, solver_result):
 				
 		#Different first point depending on the direction of route
 		if data['direction'] == 0:
-			arrival_time = ''
+			pass
 		else:
 			route.append(data['points_info'][1])
-			arrival_time = '0,'
 		
 		# Write route 
 		while not routing.IsEnd(index):
@@ -471,18 +478,16 @@ def print_solution(data, solver_result):
 				pass
 			else:
 				route.append(data['points_info'][node_index])
-				arrival_time += str(solution.Min(time_var)) + ','
-			point_index +=1
+			point_index += 1
 		
 		# Different last point depending on the direction
 		if data['direction'] == 0:
 			route.append(data['points_info'][1])
 		else:
-			arrival_time = arrival_time[:-1]
-		arrival_time += str(solution.Min(time_var))
+			pass
 			
 		# If the route exists, then get its parameters from the server for drawing on the map
-		if route_distance != 0 :
+		if route_distance != 0:
 			base_results['routes'].append({
 				'id': route_id,
 				'route': route,
@@ -494,9 +499,10 @@ def print_solution(data, solver_result):
 			total_bus += 1
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
+			print(solution.Min(time_var))
 		else:
 			pass
-		
+
 	# Add the full route information to the database
 	used_buses = used_buses[:-1]
 	used_buses = used_buses.split(',')
@@ -517,11 +523,9 @@ def print_solution(data, solver_result):
 		day_time = data['school_time'][day]
 
 		for a in base_results['routes']:
-			print('***')
 			route_for_draw = ''
 			day_route = []
 			for i in a['route']:
-				print(i)
 				if i['presence'][day] == 1:
 					route_for_draw += i['coordinates_for_route'] + ';'
 					day_route.append(i)
@@ -539,6 +543,7 @@ def print_solution(data, solver_result):
 			total_distance += info['distance']
 
 			day_routes.append(info)
+
 		serv_result['days'].append({day:
 			{'summary': {
 				"number_of_routes": total_bus,
@@ -552,7 +557,6 @@ def print_solution(data, solver_result):
 				"routes": day_routes}})
 	
 	return serv_result
-
 
 # Calling functions for query work
 app = Application([MakeModeling], 'spyne.examples.django', in_protocol= JsonDocument(), out_protocol= JsonDocument())
