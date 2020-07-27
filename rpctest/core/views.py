@@ -177,7 +177,7 @@ def create_data_model(data_input):
 	try:
 		get_matrix = requests.post(url_req)
 		r = get_matrix.json()	
-	
+
 	# Time matrix process
 		for a in range(len(data_input['points'])):
 
@@ -189,9 +189,9 @@ def create_data_model(data_input):
 					else:
 						# Edit time matrix
 						if a <= 1 or b <= 1:
-							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'],1)
+							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'], 1)
 						else:
-							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'],1) + data['service_time']
+							r['durations'][a][b] = round(r['durations'][a][b] * data['time_coefficient'], 1) + data['service_time']
 					# Checking maximum route time from the start to end points of the route
 					if r['durations'][0][a] > max_time:
 						max_time = r['durations'][a][b]
@@ -224,7 +224,7 @@ def create_data_model(data_input):
 				# Arbitrary finish point
 				r['durations'][0][a] = 0
 				r['durations'][a][0] = 0
-		
+
 		# Write changing matrix to
 		data['time_matrix'] = r['durations']
 
@@ -323,7 +323,7 @@ def main(data):
 		routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH) # method - GUIDED_LOCAL_SEARCH
 	
 	# Searching log in console
-	search_parameters.log_search = True
+	search_parameters.log_search = False
 	
 	# Solve the problem
 	solution = routing.SolveWithParameters(search_parameters)
@@ -365,7 +365,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 
 		# Start time calculation
 		if data['direction'] == 0:
-			route_time = time_temp - timedelta(seconds=round(res['routes'][0]['duration'] + (data['service_time'] * (len(res['routes'][0]['legs'])-1))))
+			route_time = time_temp - timedelta(seconds=round(res['routes'][0]['duration'] + (data['service_time'] * (len(res['waypoints'])-1))))
 		else:
 			route_time = time_temp
 
@@ -467,7 +467,7 @@ def print_solution(data, solver_result):
 			index = solution.Value(routing.NextVar(index))
 			route_distance += routing.GetArcCostForVehicle(previous_index, index, vehicle_id)
 
-			if route_distance !=0:
+			if route_distance != 0:
 				temp_route.append(solution.Min(time_var))
 			else:
 				pass
@@ -553,6 +553,7 @@ def print_solution(data, solver_result):
 				"total_points": total_points,
 				"school_time": day_time},
 				"routes": day_routes}})
+
 	
 	return serv_result
 
