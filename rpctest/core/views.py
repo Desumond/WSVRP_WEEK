@@ -1,15 +1,12 @@
-# from django.core.exceptions import ValidationError
-# from django.db.utils import IntegrityError
 from django.views.decorators.csrf import csrf_exempt
 
 from spyne.server.django import DjangoApplication
 from spyne.model.primitive import Unicode, Integer, AnyDict
 from spyne.service import ServiceBase
 from spyne.protocol.json import JsonDocument
-# from spyne.protocol.xml import XmlDocument
+
 from spyne.application import Application
 from spyne.decorator import rpc
-# from spyne.util.django import DjangoComplexModel
 
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
@@ -21,6 +18,7 @@ from datetime import datetime, timedelta
 traffic_coefficient = [1.036,1.015,1.004,1,1.003,1.018,1.066,1.190,1.254,1.244,1.221,1.218,1.218,1.222,1.221,1.216,1.226,1.228,1.241,1.232,1.210,1.171,1.130,1.076]
 
 server = 'http://3.19.181.200:5000'
+#server = 'http://192.168.100.32:5000'
 
 #Query module
 class MakeModeling(ServiceBase):
@@ -499,7 +497,7 @@ def print_solution(data, solver_result):
 			total_bus += 1
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
-			print(solution.Min(time_var))
+
 		else:
 			pass
 
