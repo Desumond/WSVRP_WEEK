@@ -17,8 +17,8 @@ from datetime import datetime, timedelta
 #Coefficients for taking to account the impact of traffic
 traffic_coefficient = [1.036,1.015,1.004,1,1.003,1.018,1.066,1.190,1.254,1.244,1.221,1.218,1.218,1.222,1.221,1.216,1.226,1.228,1.241,1.232,1.210,1.171,1.130,1.076]
 
-server = 'http://3.19.181.200:5000'
-#server = 'http://192.168.100.32:5000'
+#server = 'http://3.19.181.200:5000'
+server = 'http://192.168.100.32:5000'
 
 #Query module
 class MakeModeling(ServiceBase):
@@ -118,7 +118,7 @@ def create_data_model(data_input):
 	data['vehicle_price'] = []
 	for i in data_input['bus_types']:
 		for a in range(i['quantity']):
-			data['vehicle_price'].append(i['capacity']*25+2500)
+			data['vehicle_price'].append(i['capacity']*25+10000)
 			data['vehicle_capacities'].append(i['capacity'])
 			data['total_capacity'] += i['capacity']
 	data['num_vehicles'] = len(data['vehicle_capacities'])
@@ -227,6 +227,8 @@ def create_data_model(data_input):
 
 		# Write changing matrix to
 		data['time_matrix'] = r['durations']
+		print(data['total_demands'])
+		print(data['total_capacity'])
 
 		# Check errors
 		if max_time >= data['max_route_time']:
@@ -323,7 +325,7 @@ def main(data):
 		routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH) # method - GUIDED_LOCAL_SEARCH
 	
 	# Searching log in console
-	search_parameters.log_search = False
+	search_parameters.log_search = True
 	
 	# Solve the problem
 	solution = routing.SolveWithParameters(search_parameters)
@@ -347,75 +349,94 @@ def get_route(route_for_draw, day_route, day_time, data):
 	url = server + "/route/v1/driving/" + route_for_draw # + '?overview=full'
 
 	# Trying to connect to the server
-	try:
-		r = requests.get(url)
-		res = r.json()
+#	try:
+	r = requests.get(url)
+	res = r.json()
 
-		# Json response processing
-		# Get geometry of route
-		rt = polyline.decode(res['routes'][0]['geometry'])
+	# Json response processing
+	# Get geometry of route
+	rt = polyline.decode(res['routes'][0]['geometry'])
 
-		points = [{'distance': 0, 'duration': 0}]
-		for a in res['routes'][0]['legs']:
-			points.append({'distance': a['distance'], 'duration': a['duration']})
+	points = [{'distance': 0, 'duration': 0}]
+	for a in res['routes'][0]['legs']:
+		points.append({'distance': a['distance'], 'duration': a['duration']})
 
-		# Process time of departure(arrival) from(to) school
-		school_time = day_time.split(':')
-		time_temp = timedelta(hours=int(school_time[0]), minutes=int(school_time[1]))
+	# Process time of departure(arrival) from(to) school
+	school_time = day_time.split(':')
+	time_temp = timedelta(hours=int(school_time[0]), minutes=int(school_time[1]))
 
-		# Start time calculation
-		if data['direction'] == 0:
-			route_time = time_temp - timedelta(seconds=round(res['routes'][0]['duration'] + (data['service_time'] * (len(res['waypoints'])-1))))
+	# Start time calculation
+	if data['direction'] == 0:
+		route_time = time_temp - timedelta(
+			seconds=round(res['routes'][0]['duration'] + (data['service_time'] * (len(points)-1))))
+	else:
+		route_time = time_temp
+
+	# Route points
+	waypoints = []
+	time = 0
+	counter = 0
+	distance_from_school = 0
+	distance_to_school = res['routes'][0]['distance']
+	for i in res['waypoints']:
+
+		# Arrival hour calculation
+		hour = timedelta(seconds=time) + route_time
+
+		if counter + 1 == len(res['waypoints']):
+			ind = 0
 		else:
-			route_time = time_temp
+			ind = counter + 1
 
-		# Route points
-		waypoints = []
-		time = 0
-		counter = 0
-		for i in res['waypoints']:
-			# For last point no service time
-			if counter == (len(res['waypoints'])-1):
-				time += round(points[counter]['duration'])
-			else:
-				time += round(points[counter]['duration'] + data['service_time'])
-			# Arrival hour calculation
-			hour = timedelta(seconds=time) + route_time
+		if data['direction'] == 0:
+			waypoints.append({'index': counter, 'id': day_route[counter]['id'], 'arrival_time': time,
+							  "arrival_hour": str(hour),
+							  "distance_next": round(points[ind]['distance']),
+							  "time_next": round(points[ind]['duration']),
+							  "school_distance": round(distance_to_school),
+							  'lng': i['location'][0], 'lat': i['location'][1]})
+			distance_to_school -= points[ind]['distance']
+		else:
+			waypoints.append({'index': counter, 'id': day_route[counter]['id'], 'arrival_time': time,
+							  "arrival_hour": str(hour),
+							  "distance_next": round(points[counter]['distance']),
+							  "time_next": round(points[counter]['duration']),
+							  "school_distance": round(distance_from_school),
+							  'lng': i['location'][0], 'lat': i['location'][1]})
+			distance_from_school += points[ind]['distance']
 
-			if counter == 0:
-				waypoints.append({'index': 0, 'id': day_route[counter]['id'], 'arrival_time': 0,
-								"arrival_hour": str(hour),
-								'lng': i['location'][0], 'lat': i['location'][1]})
-			else:
-				waypoints.append({'index': counter, 'id': day_route[counter]['id'], 'arrival_time': time,
-								"arrival_hour": str(hour),
-								'lng': i['location'][0], 'lat': i['location'][1]})
-			counter += 1
+		# For last point no service time
+		if counter == (len(res['waypoints']) - 1):
+			time += round(points[ind]['duration'])
+		else:
+			time += round(points[ind]['duration'] + data['service_time'])
+		counter += 1
 
-		start_point = {'id': day_route[0]['id'],
-					   'arrival_time': 0,
-					   "arrival_hour": str(route_time),
-					   'lng': res['waypoints'][0]['location'][0],
-					   'lat': res['waypoints'][0]['location'][1]}
+	start_point = {'id': day_route[0]['id'],
+				   'arrival_time': 0,
+				   "arrival_hour": str(route_time),
+				   'lng': res['waypoints'][0]['location'][0],
+				   'lat': res['waypoints'][0]['location'][1]}
 
-		end_point = {'id': day_route[-1]['id'],
-					 'arrival_time': time,
-					 "arrival_hour": str(hour),
-					 'lng': res['waypoints'][-1]['location'][0],
-					 'lat': res['waypoints'][-1]['location'][1]}
+	end_point = {'id': day_route[-1]['id'],
+				 'arrival_time': time,
+				 "arrival_hour": str(hour),
+				 'lng': res['waypoints'][-1]['location'][0],
+				 'lat': res['waypoints'][-1]['location'][1]}
 
-		# Create information for drawing a map
-		draw = {'distance': res['routes'][0]['distance'],
-			   'start': start_point,
-			   'finish': end_point,
-			   'waypoints': waypoints,
+	# Create information for drawing a map
+	draw = {'distance': round(res['routes'][0]['distance']),
+			'start': start_point,
+			'finish': end_point,
+			'waypoints': waypoints,
 			#   'geometry': res['routes'][0]['geometry'],
-			   'polyline': rt
-			   }
-		route_info = {'load': len(res['routes'][0]['legs']), 'total_time': time, 'distance': res['routes'][0]['distance'],'draw': draw}
-	except:
-		data['error'] = 'Connection error! OSRM server is not responding, it is not possible to get the route.'
-		route_info = ''
+			'polyline': rt
+			}
+	route_info = {'load': len(res['routes'][0]['legs']), 'total_time': time, 'distance': res['routes'][0]['distance'],
+				  'draw': draw}
+#	except:
+#		data['error'] = 'Connection error! OSRM server is not responding, it is not possible to get the route.'
+#		route_info = ''
 
 	return route_info
 
@@ -533,6 +554,8 @@ def print_solution(data, solver_result):
 			info = {'id': a['id'], 'bus_capacity': a['bus_capacity']}
 			route = get_route(route_for_draw, day_route, day_time, data)
 			info.update(route)
+
+
 
 			total_demands += info['load']
 			total_load += info['load']
