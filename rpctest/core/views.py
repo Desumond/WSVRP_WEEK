@@ -17,8 +17,8 @@ from datetime import datetime, timedelta
 #Coefficients for taking to account the impact of traffic
 traffic_coefficient = [1.036,1.015,1.004,1,1.003,1.018,1.066,1.190,1.254,1.244,1.221,1.218,1.218,1.222,1.221,1.216,1.226,1.228,1.241,1.232,1.210,1.171,1.130,1.076]
 
-#server = 'http://3.19.181.200:5000'
-server = 'http://192.168.100.32:5000'
+server = 'http://3.19.181.200:5000'
+#server = 'http://192.168.100.32:5000'
 
 #Query module
 class MakeModeling(ServiceBase):
