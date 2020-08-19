@@ -15,3 +15,5 @@ urlpatterns = [
 		services=[MakeModeling], tns='spyne.examples.django',
 		in_protocol=JsonDocument(), out_protocol=JsonDocument()))
 	]
+
+#in_protocol=Soap11(validator="lxml"), out_protocol=JsonDocument()))

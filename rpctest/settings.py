@@ -42,7 +42,7 @@ MANAGERS = ADMINS
 
 db_name = os.path.join(tempfile.gettempdir(), 'rpctest.sqlite')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.100.36']
 
 DATABASES = {
     'default': {
