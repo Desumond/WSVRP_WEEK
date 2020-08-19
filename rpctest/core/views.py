@@ -23,8 +23,8 @@ from datetime import datetime, timedelta
 #Coefficients for taking to account the impact of traffic
 traffic_coefficient = [1.036,1.015,1.004,1,1.003,1.018,1.066,1.190,1.254,1.244,1.221,1.218,1.218,1.222,1.221,1.216,1.226,1.228,1.241,1.232,1.210,1.171,1.130,1.076]
 
-#server = 'http://3.19.181.200:5000'
-server = 'http://192.168.100.32:5000'
+server = 'http://3.19.181.200:5000'
+#server = 'http://192.168.100.32:5000'
 
 #Query module
 class MakeModeling(Service):
@@ -68,9 +68,15 @@ class MakeModeling(Service):
 			elif data['error'] == 'CapacityError':
 				solution['status'] = {'code': data['error'], 'message': data['info']}
 
+			elif data['error'] == 'Connection error! OSRM server is not responding, it is not possible to get the time matrix.':
+				solution['status'] = {'code': 'ConnectionError', 'message': data['error']}
+
+			elif data['error'] == 'TypeError':
+				solution['status'] = {'code': 'TypeError',
+									   'message': 'InvalidQuery. One of the data element in query does not exist or does not match the pattern. Verify the request is correct.'}
+
 			else:
-				solution = {'status': {'code': 'ConnectionError',
-									   'message': 'OSRM server is not responding. It is not possible to get the matrix.'}}
+				solution = {'status': {'code': 'UnknownDataERROR', 'message': 'Unknown error with input data'}}
 
 		# If the data is incorrect, then we raise various types of errors
 		except TypeError:

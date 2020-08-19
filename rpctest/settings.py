@@ -31,6 +31,7 @@
 # Django settings for rpctest project.
 import os
 import tempfile
+#DEBUG = True
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
