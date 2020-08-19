@@ -31,7 +31,7 @@
 # Django settings for rpctest project.
 import os
 import tempfile
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
@@ -42,7 +42,8 @@ MANAGERS = ADMINS
 
 db_name = os.path.join(tempfile.gettempdir(), 'rpctest.sqlite')
 
-ALLOWED_HOSTS = ['192.168.100.36']
+#ALLOWED_HOSTS = ['192.168.100.36']
+ALLOWED_HOSTS = ['3.19.181.200:80']
 
 DATABASES = {
     'default': {
