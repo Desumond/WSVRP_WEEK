@@ -54,7 +54,7 @@ class MakeModeling(Service):
 			else:
 				data = {}
 				solution = {'status': {'code': 'TypeError',
-									   'message': 'InvalidQuery. One of the data element in query does not exist or does not match the pattern. Verify the request is correct.'}}
+									   'message': 'Solicitud no válida. Uno de los elementos de datos de la consulta no existe o no coincide con el patrón. Verifique que la solicitud sea correcta.'}}
 				data['error'] = 'TypeError'
 
 			# If the data matches the template, then go to the modeling
@@ -68,29 +68,29 @@ class MakeModeling(Service):
 			elif data['error'] == 'CapacityError':
 				solution['status'] = {'code': data['error'], 'message': data['info']}
 
-			elif data['error'] == 'Connection error! OSRM server is not responding, it is not possible to get the time matrix.':
-				solution['status'] = {'code': 'ConnectionError', 'message': data['error']}
+			elif data['error'] == 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.':
+				solution['status'] = {'code': 'ConnectionError', 'message': 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.'}
 
 			elif data['error'] == 'TypeError':
 				solution['status'] = {'code': 'TypeError',
-									   'message': 'InvalidQuery. One of the data element in query does not exist or does not match the pattern. Verify the request is correct.'}
+									   'message': 'Solicitud no válida. Uno de los elementos de datos de la consulta no existe o no coincide con el patrón. Verifique que la solicitud sea correcta.'}
 
 			else:
-				solution = {'status': {'code': 'UnknownDataERROR', 'message': 'Unknown error with input data'}}
+				solution = {'status': {'code': 'UnknownDataERROR', 'message': 'Error desconocido con datos de entrada'}}
 
 		# If the data is incorrect, then we raise various types of errors
 		except TypeError:
 				solution = {'status': {'code': 'TypeError',
-									   'message': 'InvalidQuery. One of the data element in query does not exist or does not match the pattern. Verify the request is correct.'}}
+									   'message': 'Solicitud no válida. Uno de los elementos de datos de la consulta no existe o no coincide con el patrón. Verifique que la solicitud sea correcta.'}}
 		except LookupError:
 			solution = {'status': {'code': 'LookupError',
-								   'message': 'InvalidQuery. One of the keys in query does not exist or does not match the pattern. Verify the request is correct.'}}
+								   'message': 'Solicitud no válida. Uno de los elementos de datos de la consulta no existe o no coincide con el patrón. Verifique que la solicitud sea correcta.'}}
 		except:
 			# If the error is due to the impossibility of modeling, then do not raise the unknown error related to the data
 			if er == 1:
 				pass
 			else:
-				solution = {'status': {'code': 'UnknownDataERROR', 'message': 'Unknown error with input data'}}
+				solution = {'status': {'code': 'UnknownDataERROR', 'message': 'Error desconocido con datos de entrada'}}
 
 			#Call the solution function
 		if gotomodeling == 1:
@@ -100,19 +100,19 @@ class MakeModeling(Service):
 				# If a solution was found, then output
 				if solver_result['status'] == 1:
 					solution = print_solution(data, solver_result, data_input)
-					solution['status'] = {'code': 'OK', 'message': 'Problem solved successfully'}
+					solution['status'] = {'code': 'OK', 'message': 'Problema resuelto con éxito'}
 				# If not, then we raise various errors related to the solver
 				elif solver_result['status'] == 2:
 					solution = {'status': {'code': 'NoSolutionERROR',
-										   'message': 'No solution found to the problem. Verify the data is correct or try to increase capacity'}}
+										   'message': 'No se encontró solución al problema. Verifique que los datos sean correctos o intente aumentar la capacidad'}}
 				elif solver_result['status'] == 3:
 					solution = {'status': {'code': 'TimeERROR',
-										   'message': 'No solution found to the problem. Time limit reached before finding a solution. Verify the data is correct or try to increase capacity'}}
+										   'message': 'No se encontró solución al problema. Límite de tiempo alcanzado antes de encontrar una solución. Verifique que los datos sean correctos o intente aumentar la capacidad'}}
 				elif solver_result['status'] == 4:
 					solution = {'status': {'code': 'ModelERROR',
-										   'message': 'No solution found to the problem. Model is not correct. Verify the data is correct'}}
+										   'message': 'No se encontró solución al problema. Verifique que los datos sean correctos'}}
 				else:
-					solution = {'status': {'code': 'UnknownSolverERROR', 'message': 'Unknown error'}}
+					solution = {'status': {'code': 'UnknownSolverERROR', 'message': 'Error desconocido con solucionador'}}
 
 			elif school['form'] == 1:
 				local_solution = []
@@ -127,27 +127,27 @@ class MakeModeling(Service):
 					# If not, then we raise various errors related to the solver
 					elif solver_result['status'] == 2:
 						error = {'status': {'code': 'NoSolutionERROR',
-											'message': 'No solution found to the problem. Verify the data is correct or try to increase capacity',
+											'message': 'No se encontró solución al problema. Verifique que los datos sean correctos o intente aumentar la capacidad',
 											'day': key}}
 						er = 1
 					elif solver_result['status'] == 3:
 						error = {'status': {'code': 'TimeERROR',
-											'message': 'No solution found to the problem. Time limit reached before finding a solution. Verify the data is correct or try to increase capacity',
+											'message': 'No se encontró solución al problema. Límite de tiempo alcanzado antes de encontrar una solución. Verifique que los datos sean correctos o intente aumentar la capacidad',
 											'day': key}}
 						er = 1
 					elif solver_result['status'] == 4:
 						error = {'status': {'code': 'ModelERROR',
-											'message': 'No solution found to the problem. Model is not correct. Verify the data is correct',
+											'message': 'No se encontró solución al problema. Verifique que los datos sean correctos',
 											'day': key}}
 						er = 1
 					else:
-						error = {'status': {'code': 'UnknownSolverERROR', 'message': 'Unknown error', 'day': key}}
+						error = {'status': {'code': 'UnknownSolverERROR', 'message': 'Error desconocido con solucionador', 'day': key}}
 						er = 1
 
 				if er == 1:
 					solution = error
 				else:
-					solution['status'] = {'code': 'OK', 'message': 'Problem solved successfully'}
+					solution['status'] = {'code': 'OK', 'message': 'Problema resuelto con éxito'}
 					if data['direction'] == 0:
 						solution['info']['direction'] = 'Recogida'
 					else:
@@ -311,8 +311,8 @@ def create_data_model(data_input):
 
 	# Check errors
 	if result['max_time'] >= data['max_route_time']:
-		data['info'] = 'The travel time from the start to one of the end points is more than maximum travel time. '
-		data['info'] += 'The solution will not be found. Check the coordinates or increase the maximum travel time.'
+		data['info'] = 'El tiempo de viaje desde el inicio hasta uno de los puntos finales es mayor que el tiempo máximo de viaje. '
+		data['info'] += 'No se encontrará la solución. Verifique las coordenadas o aumente el tiempo máximo de viaje.'
 		data['error'] = 'TravelTimeError'
 	else:
 		pass
@@ -320,7 +320,7 @@ def create_data_model(data_input):
 	for key in data['school_time'].keys():
 		total_demands = len(data['dict_coordinates'][key].split(';'))
 		if total_demands > data['total_capacity']:
-			data['info'] = 'Total demand is more than total capacity. The solution will not be found. Check the number of buses or increase it'
+			data['info'] = 'Necesidad total es más que la capacidad total. No se encontrará la solución. Verifique el número de autobuses o auméntelo'
 			data['error'] = 'CapacityError'
 		else:
 			pass
@@ -395,7 +395,7 @@ def time_matrix_query(data, coordinates, data_input, key):
 
 	# If could not connect to OSRM server
 	except:
-		data['error'] = 'Connection error! OSRM server is not responding, it is not possible to get the time matrix.'
+		data['error'] = 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.'
 	return result
 
 # Solver
@@ -585,7 +585,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 		route_info = {'load': len(res['routes'][0]['legs']), 'total_time': time, 'distance': res['routes'][0]['distance'],
 					  'draw': draw}
 	except:
-		data['error'] = 'Connection error! OSRM server is not responding, it is not possible to get the route.'
+		data['error'] = 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.'
 		route_info = ''
 
 	return route_info
