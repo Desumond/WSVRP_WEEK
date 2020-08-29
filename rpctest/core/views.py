@@ -167,7 +167,8 @@ def create_data_model(data_input):
 	data['time'] = data_input['time']
 	data['points_info'] = {}
 	data['points_info']['all'] = []
-	data['max_route_time'] = data_input['max_route_time'] * 60
+	data['max_route_time'] = round(data_input['max_route_time'] * 60 * 0.9)
+#	print(data['max_route_time'])
 	data['demands'] = {} #[0, 0] + [1] * (len(data_input['points']))
 	data['demands']['all'] = [0, 0] + [1] * (len(data_input['points']))
 	data['time_windows'] = {}
@@ -509,7 +510,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 
 		points = [{'distance': 0, 'duration': 0}]
 		for a in res['routes'][0]['legs']:
-			points.append({'distance': a['distance'], 'duration': a['duration']})
+			points.append({'distance': a['distance'], 'duration': a['duration'] * data['time_coefficient']})
 
 		# Process time of departure(arrival) from(to) school
 		school_time = day_time.split(':')
@@ -518,7 +519,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 		# Start time calculation
 		if data['direction'] == 0:
 			route_time = time_temp - timedelta(
-				seconds=round(res['routes'][0]['duration'] + (data['service_time'] * (len(points)-1))))
+				seconds=round(res['routes'][0]['duration'] * data['time_coefficient'] + (data['service_time'] * (len(points)-2))))
 		else:
 			route_time = time_temp
 
@@ -556,7 +557,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 				distance_from_school += points[ind]['distance']
 
 			# For last point no service time
-			if counter == (len(res['waypoints']) - 1):
+			if counter == (len(res['waypoints']) - 1) or counter == 0:
 				time += round(points[ind]['duration'])
 			else:
 				time += round(points[ind]['duration'] + data['service_time'])
@@ -584,6 +585,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 				}
 		route_info = {'load': len(res['routes'][0]['legs']), 'total_time': time, 'distance': res['routes'][0]['distance'],
 					  'draw': draw}
+	#	print(time)
 	except:
 		data['error'] = 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.'
 		route_info = ''
@@ -668,6 +670,8 @@ def print_solution(data, solver_result, data_input):
 			total_bus += 1
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
+
+		#	print('solution',solution.Min(time_var))
 
 		else:
 			pass
@@ -808,6 +812,8 @@ def print_solution_empresa(data, solver_result, data_input, key):
 			total_bus += 1
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
+
+			print('solution', solution.Min(time_var))
 
 		else:
 			pass
