@@ -26,7 +26,7 @@ traffic_coefficient = [1.036,1.015,1.004,1,1.003,1.018,1.066,1.190,1.254,1.244,1
 #server = 'http://3.19.181.200:5000'
 server = 'http://192.168.100.32:5000'
 
-#Query module
+# Query module
 class MakeModeling(Service):
 	@rpc(AnyDict, AnyDict, Integer, Integer, Integer, AnyDict, Integer, Integer, AnyDict, _returns=AnyDict)
 	def vrp_modeling(ctx, school, bus_types, max_route_time, direction, time, school_time, service_time, modeling_time, points):
@@ -47,7 +47,6 @@ class MakeModeling(Service):
 						  'service_time': service_time,
 						  'modeling_time': modeling_time,
 						  'points': points}
-			#	print(data_input)
 
 			if school['form'] == 0 or school['form'] == 1:
 				data = create_data_model(data_input)
@@ -169,7 +168,7 @@ class MakeModeling(Service):
 		return solution
 
 
-#Function to translate data from json to solver format
+# Function to translate data from json to solver format
 def create_data_model(data_input):
 	# Create a template
 	data = {}
@@ -178,7 +177,6 @@ def create_data_model(data_input):
 	data['points_info'] = {}
 	data['points_info']['all'] = []
 	data['max_route_time'] = round(data_input['max_route_time'] * 60 * 0.9)
-#	print(data['max_route_time'])
 	data['demands'] = {} #[0, 0] + [1] * (len(data_input['points']))
 	data['demands']['all'] = [0, 0] + [1] * (len(data_input['points']))
 	data['time_windows'] = {}
@@ -340,7 +338,7 @@ def create_data_model(data_input):
 
 	return data
 
-
+# Function to create time matrix for schools and empresas
 def time_matrix_query(data, coordinates, data_input, key):
 	# Time matrix query
 	url_req = server + '/table/v1/driving/' + coordinates + '?annotations=duration'
@@ -403,7 +401,6 @@ def time_matrix_query(data, coordinates, data_input, key):
 		result['time_matrix'] = r['durations']
 
 		result['max_time'] = max_time
-		print(max_time)
 
 	# If could not connect to OSRM server
 	except:
@@ -596,7 +593,6 @@ def get_route(route_for_draw, day_route, day_time, data):
 				}
 		route_info = {'load': len(res['routes'][0]['legs']), 'total_time': time, 'distance': res['routes'][0]['distance'],
 					  'draw': draw}
-	#	print(time)
 	except:
 		data['error'] = 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.'
 		route_info = ''
@@ -604,7 +600,7 @@ def get_route(route_for_draw, day_route, day_time, data):
 	return route_info
 
 
-# Output the result in the required format
+# Output the result in the required format for schools
 def print_solution(data, solver_result, data_input):
 	manager = solver_result['manager']
 	routing = solver_result['routing']
@@ -681,13 +677,8 @@ def print_solution(data, solver_result, data_input):
 			total_bus += 1
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
-
-		#	print('solution',solution.Min(time_var))
-
 		else:
 			pass
-	#print(base_results)
-
 
 	# Add the full route information to the database
 	used_buses = used_buses[:-1]
@@ -753,6 +744,7 @@ def print_solution(data, solver_result, data_input):
 	return serv_result
 
 
+# Output the result in the required format for empresas
 def print_solution_empresa(data, solver_result, data_input, key):
 	manager = solver_result['manager']
 	routing = solver_result['routing']
@@ -824,11 +816,8 @@ def print_solution_empresa(data, solver_result, data_input, key):
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
 
-		#	print('solution', solution.Min(time_var))
-
 		else:
 			pass
-#	print(base_results)
 
 	# Add the full route information to the database
 	used_buses = used_buses[:-1]
@@ -891,6 +880,7 @@ def print_solution_empresa(data, solver_result, data_input, key):
 	return serv_result
 
 
+# Output the result in the required format for route with determed start and finish
 def print_solution_empresa_route(data, solver_result, data_input, key):
 	manager = solver_result['manager']
 	routing = solver_result['routing']
@@ -934,9 +924,7 @@ def print_solution_empresa_route(data, solver_result, data_input, key):
 			else:
 				route.append(data['points_info'][key][node_index])
 
-
 		route.append(data['points_info'][key][0])
-
 
 		# If the route exists, then get its parameters from the server for drawing on the map
 		if route_distance != 0:
@@ -951,12 +939,8 @@ def print_solution_empresa_route(data, solver_result, data_input, key):
 			total_bus += 1
 			total_capacity += data['vehicle_capacities'][vehicle_id]
 			route_id += 1
-
-		#	print('solution', solution.Min(time_var))
-
 		else:
 			pass
-#	print(base_results)
 
 	# Add the full route information to the database
 	used_buses = used_buses[:-1]
@@ -1019,7 +1003,7 @@ def print_solution_empresa_route(data, solver_result, data_input, key):
 	return serv_result
 
 
-#Function to translate data from json to solver format
+#Function to translate data from json to solver format for route with determed start and finish
 def create_data_model_route(data_input):
 	# Create a template
 	data = {}
@@ -1028,8 +1012,7 @@ def create_data_model_route(data_input):
 	data['points_info'] = {}
 	data['points_info']['all'] = []
 	data['max_route_time'] = round(data_input['max_route_time'] * 60 * 0.9)
-#	print(data['max_route_time'])
-	data['demands'] = {} #[0, 0] + [1] * (len(data_input['points']))
+	data['demands'] = {}
 	data['demands']['all'] = [0] + [1] * (len(data_input['points']))
 	data['time_windows'] = {}
 	data['time_windows']['all'] = []
@@ -1108,7 +1091,6 @@ def create_data_model_route(data_input):
 				else:
 					pass
 			index += 1
-
 	else:
 
 		index = 0
@@ -1150,12 +1132,9 @@ def create_data_model_route(data_input):
 		data['dict_coordinates'][key] = data['dict_coordinates'][key][:-1]
 
 	# time matrix request
-	print(data)
-
 
 	for key in data['school_time'].keys():
 		result = time_matrix_query_route(data, data['dict_coordinates'][key], data_input, key)
-		print('result',result)
 		data['time_matrix'][key] = result['time_matrix']
 
 	# Check errors
@@ -1178,6 +1157,7 @@ def create_data_model_route(data_input):
 
 	return data
 
+# Function to create time matrix for route with determed start and finish
 def time_matrix_query_route(data, coordinates, data_input, key):
 	# Time matrix query
 	url_req = server + '/table/v1/driving/' + coordinates + '?annotations=duration'
@@ -1208,17 +1188,13 @@ def time_matrix_query_route(data, coordinates, data_input, key):
 
 		# Write changing matrix to
 		result['time_matrix'] = r['durations']
-		print(result['time_matrix'])
 
 		result['max_time'] = max_time
-		print(max_time)
 
 	# If could not connect to OSRM server
 	except:
 		data['error'] = 'Error de conexión! El servidor OSRM no responde, no es posible obtener la matriz de tiempo.'
 	return result
-
-
 
 
 # Calling functions for query work
