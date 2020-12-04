@@ -1,5 +1,5 @@
-ortools==7.5.7466
-requests==2.23.0
-Django==3.0.4
-spyne==2.13.2a0
 polyline==1.4.0
+requests==2.23.0
+Django==3.1.4
+spyne==2.13.2a0
+ortools==7.5.7466
